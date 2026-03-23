@@ -1,0 +1,16 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django stuff:
+*.log
+db.sqlite3
+media/                # 用户上传的文件目录
+staticfiles/          # 执行 collectstatic 后收集的静态文件目录
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
