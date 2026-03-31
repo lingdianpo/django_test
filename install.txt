@@ -1,0 +1,47 @@
+apt install python3.10-venv
+pip install uwsgi
+
+
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+pip freeze > requirements.txt
+
+添加文件 uwsgi.ini
+[uwsgi]
+# 使用 socket 文件与 Nginx 通信
+#socket=/home/ubuntu/myproject/myproject.sock
+# Http 通信方式的IP地址：端口号
+http=127.0.0.1:8000
+# 项目根目录的绝对路径
+chdir=/home/lukejian/project/dashopt
+# 项目中wsgi.py文件的目录，相对于当前工作目录
+wsgi-file=dashopt/wsgi.py
+# 启动的进程数
+processes=4
+# 每个进程的线程个数
+threads=2
+# 服务的pid记录文件
+pidfile=uwsgi.pid
+# 服务的日志文件位置
+daemonize=uwsgi.log
+# 开启主进程管理模式
+master=true
+
+
+
+启动
+uwsgi --ini uwsgi.ini
+uwsgi --stop uwsgi.pid
+
+添加venv之后
+如果开发项目时没有设置venv，需要使用插件生成requirements.txt文件的内容
+
+# 安装 pipreqs
+pip install pipreqs
+# 进入项目目录
+cd D:\git\django\test
+# 根据项目中的 import 语句自动生成 requirements.txt
+pipreqs . --force
+# 如果遇到编码问题
+pipreqs . --force --encoding=utf-8
