@@ -11,9 +11,20 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from django.utils.translation import gettext_lazy as _
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+import sys
+
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# 加载 .env 文件
+env_path = BASE_DIR / '.env'
+load_dotenv(env_path)
 
 
 # Quick-start development settings - unsuitable for production
@@ -27,6 +38,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# 启用国际化
+USE_I18N = True
+USE_L10N = True
 
 # Application definition
 
@@ -38,6 +52,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'users',
+    'carts',
+    'goods',
+    'orders',
+    'pays',
 ]
 
 MIDDLEWARE = [
@@ -45,6 +64,8 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     # cors 跨域
     'corsheaders.middleware.CorsMiddleware',
+    #语言中间件，放在 SessionMiddleware 之后
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -57,14 +78,18 @@ ROOT_URLCONF = 'dashopt.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.i18n'# 多语言添加 添加 i18n 处理器
             ],
+            'builtins':[
+                'django.templatetags.static',
+            ]
         },
     },
 ]
@@ -77,20 +102,15 @@ WSGI_APPLICATION = 'dashopt.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'HOST': os.environ.get('DB_HOST', '192.168.21.136'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
+        'USER': os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'LXW1234lxw'),
+        'NAME': os.environ.get('DB_NAME', 'dashopt'),
     }
 }
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'HOST': '127.0.0.1',
-#         'PORT': 3306,
-#         'USER': 'root',
-#         'PASSWORD': 'root',
-#         'NAME': 'study',
-#     }
-# }
+print(DATABASES)
 
 
 # Password validation
@@ -115,7 +135,16 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
+# 支持的语言列表
+LANGUAGES = [
+    ('zh-hans', _('Simplified Chinese')),
+    ('en', _('English')),
+]
+
 LANGUAGE_CODE = 'zh-Hans'
+
+# 语言文件存储路径
+LOCALE_PATHS = [BASE_DIR / 'locale']
 
 TIME_ZONE = 'Asia/Shanghai'
 
@@ -128,6 +157,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -157,3 +187,122 @@ CORS_ALLOW_HEADERS = (
     'x-csrftoken',
     'x-requested-with',
 )
+
+########################缓存配置开始###############################
+CACHES = {
+    "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379/0",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "CONNECTION_POOL_KWARGS":{
+                    "decode_responses":True
+                }
+            }
+    },
+    "carts": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379/1",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "CONNECTION_POOL_KWARGS":{
+                    "decode_responses":True
+                }
+            }
+    }
+}
+########################缓存配置结束###############################
+
+
+########################用户注册、登录时的密码盐开始###############################
+
+SALT_FOR_PASSWORD = 'Xo$%79&x8W62Al'
+
+########################用户注册、登录时的密码盐结束###############################
+
+########################邮件服务器配置开始###############################
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.qq.com'
+EMAIL_HOST_USER = '3210792769@qq.com'
+EMAIL_HOST_PASSWORD = 'rnaqyesbdmladeeb'
+EMAIL_USE_SSL = True
+EMAIL_PORT = 465
+########################邮件服务器配置结束###############################
+
+
+########################JWT密钥开始###############################
+
+JWT_SECRET_KEY = '^&*(@1A[8XrqYlQY'
+
+########################JWT密钥结束###############################
+
+
+
+
+# 创建日志目录
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True)
+
+# 日志配置
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'detailed': {
+            'format': '{levelname} {asctime} {name} {filename}:{lineno} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+            'stream': sys.stdout,
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_DIR / 'django.log',
+            'maxBytes': 1024 * 1024 * 10,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'detailed',
+            'encoding': 'utf-8',
+        },
+        'error_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_DIR / 'error.log',
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 5,
+            'formatter': 'detailed',
+            'level': 'ERROR',
+            'encoding': 'utf-8',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['file', 'error_file'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'myapp': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
+from configs.users import *
