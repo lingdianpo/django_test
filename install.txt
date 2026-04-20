@@ -8,25 +8,32 @@ pip install -r requirements.txt
 pip freeze > requirements.txt
 
 添加文件 uwsgi.ini
+
 [uwsgi]
-# 使用 socket 文件与 Nginx 通信
-#socket=/home/ubuntu/myproject/myproject.sock
-# Http 通信方式的IP地址：端口号
-http=127.0.0.1:8000
-# 项目根目录的绝对路径
+# 网络配置
+http=0.0.0.0:8000
+# 项目路径
 chdir=/home/lukejian/project/dashopt
-# 项目中wsgi.py文件的目录，相对于当前工作目录
-wsgi-file=dashopt/wsgi.py
-# 启动的进程数
-processes=4
-# 每个进程的线程个数
-threads=2
-# 服务的pid记录文件
-pidfile=uwsgi.pid
-# 服务的日志文件位置
-daemonize=uwsgi.log
-# 开启主进程管理模式
+home=/home/lukejian/project/dashopt/venv
+# WSGI 配置 - 使用 module 方式（推荐）
+module=dashopt.wsgi:application
+# 如果使用 wsgi-file，应该是：
+# wsgi-file = dashopt/wsgi.py
+# 添加 Python 路径
+pythonpath=/home/lukejian/project/dashopt
+# 进程管理
 master=true
+processes=4
+threads=2
+# 文件配置
+pidfile=%(chdir)/uwsgi.pid
+daemonize=%(chdir)/uwsgi.log
+# 日志
+log-date=true
+vacuum=true
+die-on-term=true
+# 环境变量
+env=DJANGO_SETTINGS_MODULE=dashopt.settings
 
 
 
@@ -45,3 +52,26 @@ cd D:\git\django\test
 pipreqs . --force
 # 如果遇到编码问题
 pipreqs . --force --encoding=utf-8
+
+
+
+linux 配置
+
+		location / {
+                # First attempt to serve request as file, then
+                # as directory, then fall back to displaying a 404.
+                #try_files $uri $uri/ =404;
+                uwsgi_pass 127.0.0.1:8000;
+                include /etc/nginx/uwsgi_params;
+        }
+
+        location /static {
+                root /home/lukejian/project/myproject_static;
+        }
+
+#静态文件拉取到本地
+python3 manage.py collectstatic
+
+vim setting 添加静态文件地址
+
+STATIC_ROOT = '/home/lukejian/project/myproject_static/static'
